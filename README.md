@@ -13,16 +13,21 @@
 ## Структура
 
 ```
-proxy/          - Reverse proxy с балансировкой
-├── backend.go       - Структура бэкенда
-├── pool.go          - Пул серверов (round-robin)
-├── healthcheck.go   - Проверка доступности
-├── proxy.go         - Ручное проксирование запросов
-├── loadbalancer.go  - HTTP handler
-└── main.go          - Точка входа
+cmd/                    - Точки входа приложений
+├── proxy/
+│   └── main.go            - Reverse proxy с балансировкой
+└── server/
+    └── main.go            - Тестовые HTTP сервера
 
-server/         - Тестовые сервера
-└── main.go          - Простой HTTP сервер
+pkg/                    - Переиспользуемые пакеты
+├── proxy/
+│   ├── backend.go         - Структура бэкенда
+│   ├── pool.go            - Пул серверов (round-robin)
+│   ├── healthcheck.go     - Проверка доступности
+│   ├── proxy.go           - Ручное проксирование запросов
+│   └── loadbalancer.go    - HTTP handler
+└── config/
+    └── config.go          - Конфигурация приложения
 ```
 
 ## Запуск
@@ -35,9 +40,14 @@ make build
 ./bin/proxy
 
 # Запуск тестовых серверов
-./bin/server :8081
-./bin/server :8082
-./bin/server :8083
+./bin/servers :8081
+./bin/servers :8082
+./bin/servers :8083
+
+# ИЛИ
+
+make run-proxy        # Запуск прокси
+make run-servers      # Запуск тестовых серверов
 ```
 
 ## Тестирование

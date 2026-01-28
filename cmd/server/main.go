@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"reverseProxyBasic/pkg/config"
 )
 
 type SimpleServer struct {
@@ -28,7 +30,7 @@ func (s *SimpleServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	cfg := Load()
+	cfg := config.LoadMust()
 
 	var servers []*http.Server
 

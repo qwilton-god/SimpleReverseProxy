@@ -8,15 +8,18 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"reverseProxyBasic/pkg/config"
+	"reverseProxyBasic/pkg/proxy"
 )
 
 func main() {
-	cfg := Load()
+	cfg := config.LoadMust()
 
-	pool := NewServerPool()
+	pool := proxy.NewServerPool()
 
 	for _, port := range cfg.ServerPorts {
-		backend, err := NewBackend("http://localhost" + port)
+		backend, err := proxy.NewBackend("http://localhost" + port)
 		if err != nil {
 			log.Fatalf("Failed to create backend for port %s: %v", port, err)
 		}
@@ -34,7 +37,7 @@ func main() {
 		}
 	}()
 
-	lb := NewLoadBalancer(pool)
+	lb := proxy.NewLoadBalancer(pool)
 
 	server := &http.Server{
 		Addr:         cfg.ProxyPort,
