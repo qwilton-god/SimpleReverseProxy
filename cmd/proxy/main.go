@@ -18,10 +18,10 @@ func main() {
 
 	pool := proxy.NewServerPool()
 
-	for _, port := range cfg.ServerPorts {
-		backend, err := proxy.NewBackend("http://localhost" + port)
+	for _, serverURL := range cfg.Servers {
+		backend, err := proxy.NewBackend(serverURL)
 		if err != nil {
-			log.Fatalf("Failed to create backend for port %s: %v", port, err)
+			log.Fatalf("Failed to create backend for URL %s: %v", serverURL, err)
 		}
 
 		pool.AddBackend(backend)
