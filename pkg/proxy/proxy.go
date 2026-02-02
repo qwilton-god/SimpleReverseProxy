@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxRequestBodySize  = 10 << 20
+	maxRequestBodySize  = 10 << 20 // 10MB
 	defaultProxyTimeout = 30 * time.Second
 )
 
@@ -29,6 +29,8 @@ func NewProxy() *Proxy {
 		},
 	}
 }
+
+// ServeHTTP проксирует входящий HTTP запрос на указанный backend.
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, backend *Backend) {
 	backendURL := backend.GetURL()
@@ -75,6 +77,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, backend *Backe
 	}
 }
 
+// buildProxyURL создаёт целевой URL для проксирования, комбинируя
+// базовый URL backend с путем и параметрами исходного запроса.
 func (p *Proxy) buildProxyURL(backendURL *url.URL, r *http.Request) (*url.URL, error) {
 	targetURL := *backendURL
 	targetURL.Path = r.URL.Path
@@ -84,6 +88,8 @@ func (p *Proxy) buildProxyURL(backendURL *url.URL, r *http.Request) (*url.URL, e
 	return &targetURL, nil
 }
 
+// createProxyRequest создаёт новый HTTP запрос для проксирования,
+// сохраняя метод, хост и контекст из оригинального запроса.
 func (p *Proxy) createProxyRequest(r *http.Request, targetURL *url.URL) (*http.Request, error) {
 	ctx := r.Context()
 
@@ -98,6 +104,9 @@ func (p *Proxy) createProxyRequest(r *http.Request, targetURL *url.URL) (*http.R
 	return proxyReq, nil
 }
 
+// copyHeaders копирует HTTP заголовки из src в dst.
+// Если skipHopByHop=true, фильтрует hop-by-hop заголовки
+// и добавляет X-Forwarded-* заголовки для проксирования
 func (p *Proxy) copyHeaders(dst, src http.Header, skipHopByHop bool) {
 	userAgent := ""
 	if ua := src.Get("User-Agent"); ua != "" {
@@ -126,6 +135,8 @@ func (p *Proxy) copyHeaders(dst, src http.Header, skipHopByHop bool) {
 	}
 }
 
+// isHopByHopHeader проверяет, является ли заголовок hop-by-hop.
+// Hop-by-hop заголовки специфичны для одного соединения и не должны проксироваться.
 func isHopByHopHeader(header string) bool {
 	hopByHopHeaders := []string{
 		"Connection",
@@ -147,6 +158,7 @@ func isHopByHopHeader(header string) bool {
 	return false
 }
 
+// getRemoteIP возвращает реальный IP адрес клиента.
 func getRemoteIP(forwardedFor string) string {
 	if forwardedFor != "" {
 		return forwardedFor
@@ -154,6 +166,8 @@ func getRemoteIP(forwardedFor string) string {
 	return "unknown"
 }
 
+// getScheme определяет схему запроса (http/https).
+// По умолчанию возвращает "http".
 func getScheme(headers http.Header) string {
 	if headers.Get("X-Forwarded-Proto") != "" {
 		return headers.Get("X-Forwarded-Proto")
@@ -161,6 +175,7 @@ func getScheme(headers http.Header) string {
 	return "http"
 }
 
+// logAndError логирует ошибку и отправляет HTTP ответ с указанным статусом.
 func (p *Proxy) logAndError(w http.ResponseWriter, message string, err error, status int) {
 	slog.Error(message, "error", err, "status", status)
 	http.Error(w, http.StatusText(status), status)

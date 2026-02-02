@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	// Configure structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
