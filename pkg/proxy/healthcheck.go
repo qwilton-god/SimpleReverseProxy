@@ -1,7 +1,7 @@
-package main
+package proxy
 
 import (
-	"log"
+	"log/slog"
 	"net"
 	"net/url"
 	"time"
@@ -21,7 +21,7 @@ func (p *ServerPool) HealthCheck() {
 func isBackendAlive(u *url.URL) bool {
 	conn, err := net.DialTimeout("tcp", u.Host, defaultHealthCheckTimeout)
 	if err != nil {
-		log.Printf("Health check failed for %s: %v", u, err)
+		slog.Debug("Health check failed", "url", u.String(), "error", err)
 		return false
 	}
 	_ = conn.Close()

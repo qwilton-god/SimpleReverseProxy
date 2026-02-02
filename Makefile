@@ -1,10 +1,13 @@
 build:
 	mkdir -p bin
-	cd proxy && go build -o ../bin/proxy .
-	cd server && go build -o ../bin/servers .
+	go build -o bin/proxy ./cmd/proxy
+	go build -o bin/servers ./cmd/server
 
 run-servers:
-	cd server && go run .
+	go run ./cmd/server
 
 run-proxy:
-	cd proxy && go run .
+	go run ./cmd/proxy
+
+clean:
+	rm -rf bin/
