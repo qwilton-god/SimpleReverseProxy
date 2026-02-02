@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -20,11 +20,17 @@ func NewLoadBalancer(pool *ServerPool) *LoadBalancer {
 func (lb *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	peer := lb.pool.GetNextPeer()
 	if peer == nil {
-		log.Printf("No available backends for request %s %s", r.Method, r.URL.Path)
+		slog.Error("No available backends",
+			"method", r.Method,
+			"path", r.URL.Path)
 		http.Error(w, "Service not available", http.StatusServiceUnavailable)
 		return
 	}
 
-	log.Printf("Proxying %s %s to backend %s", r.Method, r.URL.Path, peer)
+	slog.Debug("Proxying request",
+		"method", r.Method,
+		"path", r.URL.Path,
+		"backend", peer.GetStringURL())
+
 	lb.proxy.ServeHTTP(w, r, peer)
 }

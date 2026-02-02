@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,18 +14,29 @@ import (
 )
 
 func main() {
+	// Configure structured logging
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
 	cfg := config.LoadMust()
 
 	pool := proxy.NewServerPool()
 
-	for _, serverURL := range cfg.Servers {
-		backend, err := proxy.NewBackend(serverURL)
+	for _, server := range cfg.Servers {
+		backend, err := proxy.NewBackend(server.URL, server.Weight)
 		if err != nil {
-			log.Fatalf("Failed to create backend for URL %s: %v", serverURL, err)
+			slog.Error("Failed to create backend",
+				"url", server.URL,
+				"error", err)
+			os.Exit(1)
 		}
 
 		pool.AddBackend(backend)
-		log.Printf("Configured backend: %s", backend)
+		slog.Info("Configured backend",
+			"url", backend.GetStringURL(),
+			"weight", server.Weight)
 	}
 
 	go func() {
@@ -48,9 +59,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Load Balancer started at %s", cfg.ProxyPort)
+		slog.Info("Load balancer started", "addr", cfg.ProxyPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed: %v", err)
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -58,14 +70,15 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	slog.Info("Shutting down server...")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		slog.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("Server exited successfully")
+	slog.Info("Server exited successfully")
 }

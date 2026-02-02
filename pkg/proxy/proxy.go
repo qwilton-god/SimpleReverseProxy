@@ -3,7 +3,7 @@ package proxy
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -62,7 +62,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, backend *Backe
 	}
 	defer func() {
 		if err := response.Body.Close(); err != nil {
-			log.Printf("Error closing response body: %v", err)
+			slog.Warn("Error closing response body", "error", err)
 		}
 	}()
 
@@ -71,7 +71,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, backend *Backe
 	w.WriteHeader(response.StatusCode)
 
 	if _, err := io.Copy(w, response.Body); err != nil {
-		log.Printf("Error copying response body: %v", err)
+		slog.Warn("Error copying response body", "error", err)
 	}
 }
 
@@ -162,6 +162,6 @@ func getScheme(headers http.Header) string {
 }
 
 func (p *Proxy) logAndError(w http.ResponseWriter, message string, err error, status int) {
-	log.Printf("%s: %v", message, err)
+	slog.Error(message, "error", err, "status", status)
 	http.Error(w, http.StatusText(status), status)
 }
